@@ -8,7 +8,7 @@
 
 _base_ = [
     '../_base_/models/upernet_convnext.py', '../_base_/datasets/ade20k.py',
-    '../_base_/default_runtime.py', '../_base_/schedules/schedule_80k.py'
+    '../_base_/default_runtime.py', '../_base_/schedules/schedule_40k.py'
 ]
 crop_size = (512, 512)
 
@@ -22,14 +22,15 @@ model = dict(
         layer_scale_init_value=1.0,
         out_indices=[0, 1, 2, 3],
         kernel_size=[51,49,47,13,5],
-        LoRA=True
+        LoRA=True,
+        width_factor=1.5
     ),
     decode_head=dict(
-        in_channels=[96, 192, 384, 768],
+        in_channels=[144, 288, 576, 1152],
         num_classes=150,
     ),
     auxiliary_head=dict(
-        in_channels=384,
+        in_channels=576,
         num_classes=150
     ), 
     test_cfg = dict(mode='slide', crop_size=crop_size, stride=(341, 341)),
@@ -48,7 +49,7 @@ lr_config = dict(_delete_=True, policy='poly',
                  power=1.0, min_lr=0.0, by_epoch=False)
 
 # By default, models are trained on 8 GPUs with 2 images per GPU
-data=dict(samples_per_gpu=16)
+data=dict(samples_per_gpu=8)
 
 runner = dict(type='IterBasedRunnerAmp')
 
