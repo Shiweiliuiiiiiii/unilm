@@ -20,7 +20,7 @@ export LARGE_KERNEL_CONV_IMPL='/home/sliu/Projects/cutlass/examples/19_large_dep
 #module load PyTorch/1.10.0-foss-2021a-CUDA-11.3.1
 
 bash tools/dist_train.sh  \
- /home/luyin/Project/unilm/beit/semantic_segmentation/configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51.py 4  \
+ /home/luyin/Project/unilm/beit/semantic_segmentation/configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51.py 8  \
   --work-dir Results/ADE20_decomp_51/ --seed 0 --deterministic    \
    --options model.pretrained=/home/sliu/Projects/LoRA_LK/Results/Kernel_size/51494713/5/LoRA_120_fix_EMA/120epochs/checkpoint-best.pth
 
