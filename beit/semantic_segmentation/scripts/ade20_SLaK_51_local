@@ -22,7 +22,7 @@ export LARGE_KERNEL_CONV_IMPL='/datadrive_c/JJteam/cutlass/examples/19_large_dep
 ln -s /projects/0/prjste21060/projects/LoRA_LK/transfer ~/mysave
 
 bash tools/dist_train.sh  \
- configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51.py 4  \
+ configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51_local.py 4  \
   --work-dir ~/projects/0/prjste21060/projects/Segmentation/ADE20_SLaK_51/ --seed 0 --deterministic    \
    --options model.pretrained=~/mysave/convnext_tiny_Rep/51494713/LoRA_ERK_s1.5/120epochs/checkpoint-best.pth
 
