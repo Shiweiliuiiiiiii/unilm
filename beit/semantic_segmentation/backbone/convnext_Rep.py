@@ -16,6 +16,7 @@ from depthwise_conv2d_implicit_gemm import DepthWiseConv2dImplicitGEMM
 from mmcv_custom import load_checkpoint
 from mmseg.utils import get_root_logger
 from mmseg.models.builder import BACKBONES
+from mmcv.runner import BaseModule
 from functools import partial
 
 
@@ -180,7 +181,7 @@ class Block(nn.Module):
 
 
 @BACKBONES.register_module()
-class ConvNeXt_Rep(nn.Module):
+class ConvNeXt_Rep(BaseModule):
     r""" ConvNeXt_dual
         A PyTorch impl of : `A ConvNet for the 2020s`  -
           https://arxiv.org/pdf/2201.03545.pdf
@@ -193,17 +194,26 @@ class ConvNeXt_Rep(nn.Module):
         drop_path_rate (float): Stochastic depth rate. Default: 0.
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
         head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
+        pretrained (str, optional): model pretrained path. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None.
     """
 
     def __init__(self, in_chans=3, num_classes=1000,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.,
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
-                 LoRA=None
-                 , out_indices=[0, 1, 2, 3]):
-        super().__init__()
+                 LoRA=None, out_indices=[0, 1, 2, 3],
+                 use_checkpoint=False,
+                 pretrained=None,
+                 init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super().__init__(init_cfg=init_cfg)
+
         dims = [int(x * width_factor) for x in dims]
         self.kernel_size = kernel_size
         self.out_indices = out_indices
+        self.pretrained = pretrained
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
             nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
@@ -246,15 +256,12 @@ class ConvNeXt_Rep(nn.Module):
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2d, nn.Linear)):
             trunc_normal_(m.weight, std=.02)
-            # print(m.bias)
+            print(m.bias)
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         """Initialize the weights in backbone.
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
         """
 
         def _init_weights(m):
@@ -266,11 +273,11 @@ class ConvNeXt_Rep(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
-        if isinstance(pretrained, str):
+        if isinstance(self.pretrained, str):
             self.apply(_init_weights)
             logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
+            load_checkpoint(self, self.pretrained, strict=False, logger=logger)
+        elif self.pretrained is None:
             self.apply(_init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
