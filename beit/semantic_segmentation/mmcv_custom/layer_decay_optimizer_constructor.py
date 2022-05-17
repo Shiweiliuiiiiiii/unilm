@@ -1,22 +1,61 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+
 import json
 from mmcv.runner import OPTIMIZER_BUILDERS, DefaultOptimizerConstructor
 from mmcv.runner import get_dist_info
 
 
-def get_num_layer_for_vit(var_name, num_max_layer):
+def get_num_layer_layer_wise(var_name, num_max_layer=12):
+    
     if var_name in ("backbone.cls_token", "backbone.mask_token", "backbone.pos_embed"):
         return 0
-    elif var_name.startswith("backbone.patch_embed"):
+    elif var_name.startswith("backbone.downsample_layers"):
+        stage_id = int(var_name.split('.')[2])
+        if stage_id == 0:
+            layer_id = 0
+        elif stage_id == 1:
+            layer_id = 2
+        elif stage_id == 2:
+            layer_id = 3
+        elif stage_id == 3:
+            layer_id = num_max_layer
+        return layer_id
+    elif var_name.startswith("backbone.stages"):
+        stage_id = int(var_name.split('.')[2])
+        block_id = int(var_name.split('.')[3])
+        if stage_id == 0:
+            layer_id = 1
+        elif stage_id == 1:
+            layer_id = 2
+        elif stage_id == 2:
+            layer_id = 3 + block_id // 3
+        elif stage_id == 3:
+            layer_id = num_max_layer
+        return layer_id
+    else:
+        return num_max_layer + 1
+
+
+def get_num_layer_stage_wise(var_name, num_max_layer):
+    if var_name in ("backbone.cls_token", "backbone.mask_token", "backbone.pos_embed"):
         return 0
-    elif var_name.startswith("backbone.blocks"):
-        layer_id = int(var_name.split('.')[2])
-        return layer_id + 1
+    elif var_name.startswith("backbone.downsample_layers"):
+        return 0
+    elif var_name.startswith("backbone.stages"):
+        stage_id = int(var_name.split('.')[2])
+        return stage_id + 1
     else:
         return num_max_layer - 1
-
+        
 
 @OPTIMIZER_BUILDERS.register_module()
-class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
+class LearningRateDecayOptimizerConstructor(DefaultOptimizerConstructor):
     def add_params(self, params, module, prefix='', is_dcn_module=None):
         """Add all parameters of module to the params list.
         The parameters of the given module will be added to the list of param
@@ -33,8 +72,9 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
         parameter_groups = {}
         print(self.paramwise_cfg)
         num_layers = self.paramwise_cfg.get('num_layers') + 2
-        layer_decay_rate = self.paramwise_cfg.get('layer_decay_rate')
-        print("Build LayerDecayOptimizerConstructor %f - %d" % (layer_decay_rate, num_layers))
+        decay_rate = self.paramwise_cfg.get('decay_rate')
+        decay_type = self.paramwise_cfg.get('decay_type', "layer_wise")
+        print("Build LearningRateDecayOptimizerConstructor %s %f - %d" % (decay_type, decay_rate, num_layers))
         weight_decay = self.base_wd
 
         for name, param in module.named_parameters():
@@ -47,11 +87,15 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
                 group_name = "decay"
                 this_weight_decay = weight_decay
 
-            layer_id = get_num_layer_for_vit(name, num_layers)
+            if decay_type == "layer_wise":
+                layer_id = get_num_layer_layer_wise(name, self.paramwise_cfg.get('num_layers'))
+            elif decay_type == "stage_wise":
+                layer_id = get_num_layer_stage_wise(name, num_layers)
+                
             group_name = "layer_%d_%s" % (layer_id, group_name)
 
             if group_name not in parameter_groups:
-                scale = layer_decay_rate ** (num_layers - layer_id - 1)
+                scale = decay_rate ** (num_layers - layer_id - 1)
 
                 parameter_groups[group_name] = {
                     "weight_decay": this_weight_decay,
@@ -76,9 +120,4 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
                 }
             print("Param groups = %s" % json.dumps(to_display, indent=2))
         
-        # state_dict = module.state_dict()
-        # for group_name in parameter_groups:
-        #     group = parameter_groups[group_name]
-        #     for name in group["param_names"]:
-        #         group["params"].append(state_dict[name])
         params.extend(parameter_groups.values())
