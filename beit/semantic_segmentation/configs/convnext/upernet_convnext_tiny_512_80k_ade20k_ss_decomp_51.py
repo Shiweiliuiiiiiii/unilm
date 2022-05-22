@@ -63,3 +63,5 @@ optimizer_config = dict(
     bucket_size_mb=-1,
     use_fp16=True,
 )
+
+custom_hooks = [dict(type='ApplyMaskHook')]

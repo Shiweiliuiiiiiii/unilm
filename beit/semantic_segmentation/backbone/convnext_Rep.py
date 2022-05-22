@@ -202,7 +202,7 @@ class ConvNeXt_Rep(BaseModule):
     def __init__(self, in_chans=3, num_classes=1000,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.,
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
-                 LoRA=None, out_indices=[0, 1, 2, 3],
+                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None,
                  use_checkpoint=False,
                  pretrained=None,
                  init_cfg=None):
@@ -252,6 +252,46 @@ class ConvNeXt_Rep(BaseModule):
             self.add_module(layer_name, layer)
 
         self.apply(self._init_weights)
+
+        if sparse:
+            self.pretrained_sparse()
+            self.apply_mssk()
+
+    def pretrained_sparse(self):
+        self.masks = {}
+
+        for name, weight in self.named_parameters():
+            if len(weight.size()) == 2 or len(weight.size()) == 4:
+                self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False).to('cuda')
+
+        for name, weight in self.named_parameters():
+            if name in self.masks:
+                self.masks[name][:] = (weight != 0.0).float().data.to('cuda')
+
+
+    def apply_mssk(self):
+
+        def synchronism_masks(self):
+
+            for name in self.masks.keys():
+                torch.distributed.broadcast(self.masks[name], src=0, async_op=False)
+
+        synchronism_masks(self)
+
+        for name, tensor in self.named_parameters():
+            if name in self.masks:
+                if not self.half:
+                    tensor.data = tensor.data * self.masks[name]
+                    if 'momentum_buffer' in self.optimizer.state[tensor]:
+                        self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
+                                                                              'momentum_buffer'] * self.masks[
+                                                                              name]
+                else:
+                    tensor.data = tensor.data * self.masks[name].half()
+                    if name in self.name_to_32bit:
+                        tensor2 = self.name_to_32bit[name]
+                        tensor2.data = tensor2.data * self.masks[name]
+
 
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2d, nn.Linear)):
