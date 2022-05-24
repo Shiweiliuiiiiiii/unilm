@@ -4,7 +4,7 @@ conda activate lora_182
 # source /home/JJteam/.load_cu102
 # source /home/JJteam/.load_cu113
 # conda activate lora
-​
+
 # export LARGE_KERNEL_CONV_IMPL='/home/shiweil/Projects/cutlass/examples/19_large_depthwise_conv2d_torch_extension'
 export LARGE_KERNEL_CONV_IMPL='/data/cutlass/examples/19_large_depthwise_conv2d_torch_extension'
 #module purge
@@ -16,5 +16,9 @@ export LARGE_KERNEL_CONV_IMPL='/data/cutlass/examples/19_large_depthwise_conv2d_
 bash tools/dist_train.sh  configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51.py 8  \
   --work-dir Results/ADE20_decomp_51/ --seed 0 --deterministic    \
    --options model.pretrained=LoRA_ERK_s1.5/120epochs/checkpoint-best.pth
+
+
+bash tools/dist_test.sh configs/convnext/upernet_convnext_tiny_512_80k_ade20k_ss_decomp_51.py 4 \
+    https://dl.fbaipublicfiles.com/convnext/ade20k/upernet_convnext_tiny_1k_512x512.pth 4 --eval mIoU
 
 source deactivate
