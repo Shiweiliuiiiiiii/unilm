@@ -214,6 +214,7 @@ class ConvNeXt_Rep(BaseModule):
         self.kernel_size = kernel_size
         self.out_indices = out_indices
         self.pretrained = pretrained
+        self.optimizer = optimizer
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
             nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
@@ -255,7 +256,7 @@ class ConvNeXt_Rep(BaseModule):
 
         if sparse:
             self.pretrained_sparse()
-            self.apply_mssk(optimizer=optimizer)
+            self.apply_mssk()
 
     def pretrained_sparse(self):
         self.masks = {}
@@ -266,10 +267,10 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, weight in self.named_parameters():
             if name in self.masks:
-                self.masks[name] = (weight != 0.0).float().data.to(weight.device)
+                self.masks[name] = (weight != 0.0).float().data.cuda()
 
 
-    def apply_mssk(self,optimizer):
+    def apply_mssk(self):
 
         def synchronism_masks(self):
             for name in self.masks:
@@ -279,9 +280,9 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, tensor in self.named_parameters():
             if name in self.masks:
-                tensor.data = tensor.data * self.masks[name]
-                if 'momentum_buffer' in optimizer.state[tensor]:
-                    optimizer.state[tensor]['momentum_buffer'] = optimizer.state[tensor][
+                tensor.data = tensor.data * self.masks[name].to(tensor.device)
+                if 'momentum_buffer' in self.optimizer.state[tensor]:
+                    self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
                                                                           'momentum_buffer'] * self.masks[
                                                                           name]
 
