@@ -162,9 +162,6 @@ def main():
         timestamp=timestamp,
         meta=meta)
 
-    custom_hooks = [
-        dict(type='ApplyMaskHook')
-    ]
 
 if __name__ == '__main__':
     main()
