@@ -281,10 +281,10 @@ class ConvNeXt_Rep(BaseModule):
         for name, tensor in self.named_parameters():
             if name in self.masks:
                 tensor.data = tensor.data * self.masks[name].to(tensor.device)
-                if 'momentum_buffer' in self.optimizer.state[tensor]:
-                    self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
-                                                                          'momentum_buffer'] * self.masks[
-                                                                          name]
+                # if 'momentum_buffer' in self.optimizer.state[tensor]:
+                #     self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
+                #                                                           'momentum_buffer'] * self.masks[
+                #                                                           name]
 
 
     def _init_weights(self, m):
