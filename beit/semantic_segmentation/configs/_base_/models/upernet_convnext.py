@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
-norm_cfg = dict(type='BN', requires_grad=True)
+norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
     pretrained=None,
@@ -15,7 +15,7 @@ model = dict(
         in_chans=3,
         depths=[3, 3, 9, 3], 
         dims=[96, 192, 384, 768], 
-        drop_path_rate=0.2,
+        drop_path_rate=0.1,
         layer_scale_init_value=1.0,
         out_indices=[0, 1, 2, 3],
         kernel_size=[51,49,47,13,5],

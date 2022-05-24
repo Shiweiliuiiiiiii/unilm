@@ -1,6 +1,6 @@
-# mask_hook = [
-#     dict(type='ApplyMaskHook')
-# ]
+mask_hook = [
+    dict(type='ApplyMaskHook')
+]
 # yapf:disable
 log_config = dict(
     interval=50,

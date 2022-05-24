@@ -202,13 +202,18 @@ class ConvNeXt_Rep(BaseModule):
     def __init__(self, in_chans=3, num_classes=1000,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.,
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
-                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None,
-                 ):
-        super().__init__()
+                 LoRA=None, out_indices=[0, 1, 2, 3],
+                 use_checkpoint=False,
+                 pretrained=None,
+                 init_cfg=None):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
+        super().__init__(init_cfg=init_cfg)
 
         dims = [int(x * width_factor) for x in dims]
         self.kernel_size = kernel_size
         self.out_indices = out_indices
+        self.pretrained = pretrained
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
             nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
@@ -248,52 +253,15 @@ class ConvNeXt_Rep(BaseModule):
 
         self.apply(self._init_weights)
 
-        if sparse:
-            self.pretrained_sparse()
-            self.apply_mssk()
-
-    def pretrained_sparse(self):
-        self.masks = {}
-
-        for name, weight in self.named_parameters():
-            if len(weight.size()) == 2 or len(weight.size()) == 4:
-                self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False, device='cuda')
-
-        for name, weight in self.named_parameters():
-            if name in self.masks:
-                self.masks[name][:] = (weight != 0.0).float().data.cuda()
-                print(f"{name} density is {(self.masks[name] != 0.0).sum().item()/self.masks[name].numel()}")
-
-
-    def apply_mssk(self):
-
-        def synchronism_masks(self):
-            for name in self.masks:
-                torch.distributed.broadcast(self.masks[name], src=0, async_op=False)
-
-        synchronism_masks(self)
-
-        for name, tensor in self.named_parameters():
-            if name in self.masks:
-                tensor.data = tensor.data * self.masks[name].to(tensor.device)
-                # if 'momentum_buffer' in self.optimizer.state[tensor]:
-                #     self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
-                #                                                           'momentum_buffer'] * self.masks[
-                #                                                           name]
-
-
     def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
             trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+            print(m.bias)
+            if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         """Initialize the weights in backbone.
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
         """
 
         def _init_weights(m):
@@ -305,11 +273,11 @@ class ConvNeXt_Rep(BaseModule):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
-        if isinstance(pretrained, str):
+        if isinstance(self.pretrained, str):
             self.apply(_init_weights)
             logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
+            load_checkpoint(self, self.pretrained, strict=False, logger=logger)
+        elif self.pretrained is None:
             self.apply(_init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
@@ -332,7 +300,6 @@ class ConvNeXt_Rep(BaseModule):
         return tuple(outs)
 
     def forward(self, x):
-        self.apply_mssk()
         x = self.forward_features(x)
         # x = self.head(x)
         return x
