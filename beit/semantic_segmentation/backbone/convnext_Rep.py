@@ -261,9 +261,10 @@ class ConvNeXt_Rep(BaseModule):
         self.masks = {}
 
         for name, weight in self.named_parameters():
+            print(name)
             if len(weight.size()) == 2 or len(weight.size()) == 4:
                 self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False, device='cuda')
-                print(name)
+
         for name, weight in self.named_parameters():
             if name in self.masks:
                 self.masks[name][:] = (weight != 0.0).float().data.cuda()
