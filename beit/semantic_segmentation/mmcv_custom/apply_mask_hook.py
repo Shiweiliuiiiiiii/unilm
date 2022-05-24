@@ -13,9 +13,10 @@ class ApplyMaskHook(Hook):
         Apply mask before each update
         """
         runner.model.backbone.apply_mssk()
-
+        print('apply masks before training')
     def after_iter(self, runner):
         """
         Apply mask after each update
         """
         runner.model.backbone.apply_mssk()
+        print('apply masks after training')
