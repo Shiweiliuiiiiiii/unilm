@@ -262,7 +262,7 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, weight in self.named_parameters():
             if len(weight.size()) == 2 or len(weight.size()) == 4:
-                self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False).cuda()
+                self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False, device='cuda')
 
         for name, weight in self.named_parameters():
             if name in self.masks:
@@ -281,7 +281,7 @@ class ConvNeXt_Rep(BaseModule):
         for name, tensor in self.named_parameters():
             if name in self.masks:
                 print('apply masks')
-                tensor.data = tensor.data * self.masks[name].data.cuda()
+                tensor.data = tensor.data * self.masks[name].data
                 if 'momentum_buffer' in self.optimizer.state[tensor]:
                     self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
                                                                           'momentum_buffer'] * self.masks[
