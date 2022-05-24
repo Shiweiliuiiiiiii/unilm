@@ -1,4 +1,4 @@
-custom_hooks = [
+mask_hook = [
     dict(type='ApplyMaskHook')
 ]
 # yapf:disable
