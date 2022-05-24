@@ -202,7 +202,7 @@ class ConvNeXt_Rep(BaseModule):
     def __init__(self, in_chans=3, num_classes=1000,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.,
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
-                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None, optimizer=None,
+                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None,
                  use_checkpoint=False,
                  pretrained=None,
                  init_cfg=None):
@@ -214,7 +214,6 @@ class ConvNeXt_Rep(BaseModule):
         self.kernel_size = kernel_size
         self.out_indices = out_indices
         self.pretrained = pretrained
-        self.optimizer = optimizer
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
             nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
@@ -268,6 +267,7 @@ class ConvNeXt_Rep(BaseModule):
         for name, weight in self.named_parameters():
             if name in self.masks:
                 self.masks[name] = (weight != 0.0).float().data.cuda()
+                print(f"{name} density is {(self.masks[name] != 0.0).sum().item()/self.masks[name].numel()}")
 
 
     def apply_mssk(self):
@@ -334,6 +334,7 @@ class ConvNeXt_Rep(BaseModule):
         return tuple(outs)
 
     def forward(self, x):
+        self.apply_mssk()
         x = self.forward_features(x)
         # x = self.head(x)
         return x
