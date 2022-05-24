@@ -264,10 +264,10 @@ class ConvNeXt_Rep(BaseModule):
             if len(weight.size()) == 2 or len(weight.size()) == 4:
                 self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False, device='cuda')
 
-        # for name, weight in self.named_parameters():
-        #     if name in self.masks:
-        #         self.masks[name] = (weight != 0.0).float().data.cuda()
-        #         print(type(self.masks[name]))
+        for name, weight in self.named_parameters():
+            if name in self.masks:
+                self.masks[name] = (weight != 0.0).float().data.cuda()
+                print(type(self.masks[name]))
 
 
     def apply_mssk(self):
@@ -281,7 +281,7 @@ class ConvNeXt_Rep(BaseModule):
         for name, tensor in self.named_parameters():
             if name in self.masks:
                 print('apply masks')
-                tensor.data = tensor.data * self.masks[name].data
+                tensor.data = tensor.data * self.masks[name].to(tensor.device)
                 if 'momentum_buffer' in self.optimizer.state[tensor]:
                     self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
                                                                           'momentum_buffer'] * self.masks[
