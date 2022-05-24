@@ -23,8 +23,7 @@ model = dict(
         out_indices=[0, 1, 2, 3],
         kernel_size=[51,49,47,13,5],
         LoRA=True,
-        width_factor=1.5,
-        sparse=True
+        width_factor=1.5
     ),
     decode_head=dict(
         in_channels=[144, 288, 576, 1152],
