@@ -53,6 +53,10 @@ data=dict(samples_per_gpu=8)
 
 runner = dict(type='IterBasedRunnerAmp')
 
+# hook for mask
+custom_hooks = [
+    dict(type='ApplyMaskHook')
+]
 # do not use mmdet version fp16
 fp16 = None
 optimizer_config = dict(
