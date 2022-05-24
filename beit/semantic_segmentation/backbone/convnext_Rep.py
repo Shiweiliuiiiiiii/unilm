@@ -283,9 +283,10 @@ class ConvNeXt_Rep(BaseModule):
 
 
     def _init_weights(self, m):
-        if isinstance(m, (nn.Conv2d, nn.Linear)):
+        if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=.02)
-            nn.init.constant_(m.bias, 0)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
 
 
     def init_weights(self, pretrained=None):
