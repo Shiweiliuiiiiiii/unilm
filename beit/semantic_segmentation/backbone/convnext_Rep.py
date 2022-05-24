@@ -263,10 +263,11 @@ class ConvNeXt_Rep(BaseModule):
         for name, weight in self.named_parameters():
             if len(weight.size()) == 2 or len(weight.size()) == 4:
                 self.masks[name] = torch.zeros_like(weight, dtype=torch.float32, requires_grad=False, device='cuda')
-
-        for name in self.masks:
-            self.masks[name] = (weight != 0.0).float().data.cuda()
-            print(f"{name} density is {(self.masks[name] != 0.0).sum().item()/self.masks[name].numel()}")
+                print(name)
+        for name, weight in self.named_parameters():
+            if name in self.masks:
+                self.masks[name][:] = (weight != 0.0).float().data.cuda()
+                print(f"{name} density is {(self.masks[name] != 0.0).sum().item()/self.masks[name].numel()}")
 
 
     def apply_mssk(self):
