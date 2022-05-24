@@ -8,13 +8,13 @@ class ApplyMaskHook(Hook):
     Customized masking operation.
     """
 
-    def before_iter(self, runner):
+    def before_train_iter(self, runner):
         """
         Apply mask before each update
         """
         runner.model.backbone.apply_mssk()
         print('apply masks before training')
-    def after_iter(self, runner):
+    def after_train_iter(self, runner):
         """
         Apply mask after each update
         """
