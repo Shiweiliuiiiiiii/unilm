@@ -12,19 +12,26 @@ _base_ = [
 ]
 crop_size = (512, 512)
 
+optimizer = dict(constructor='LearningRateDecayOptimizerConstructor', _delete_=True, type='AdamW', 
+                 lr=0.0001, betas=(0.9, 0.999), weight_decay=0.05,
+                 paramwise_cfg={'decay_rate': 0.9,
+                                'decay_type': 'stage_wise',
+                                'num_layers': 6})
+
 model = dict(
     backbone=dict(
         type='ConvNeXt_Rep',
         in_chans=3,
-        depths=[3, 3, 9, 3], 
-        dims=[96, 192, 384, 768], 
+        depths=[3, 3, 9, 3],
+        dims=[96, 192, 384, 768],
         drop_path_rate=0.4,
         layer_scale_init_value=1.0,
         out_indices=[0, 1, 2, 3],
         kernel_size=[51,49,47,13,5],
         LoRA=True,
         width_factor=1.5,
-        sparse=True
+        sparse=True,
+        optimizer=optimizer
     ),
     decode_head=dict(
         in_channels=[144, 288, 576, 1152],
@@ -33,15 +40,10 @@ model = dict(
     auxiliary_head=dict(
         in_channels=576,
         num_classes=150
-    ), 
+    ),
     test_cfg = dict(mode='slide', crop_size=crop_size, stride=(341, 341)),
 )
 
-optimizer = dict(constructor='LearningRateDecayOptimizerConstructor', _delete_=True, type='AdamW', 
-                 lr=0.0001, betas=(0.9, 0.999), weight_decay=0.05,
-                 paramwise_cfg={'decay_rate': 0.9,
-                                'decay_type': 'stage_wise',
-                                'num_layers': 6})
 
 lr_config = dict(_delete_=True, policy='poly',
                  warmup='linear',

@@ -202,7 +202,7 @@ class ConvNeXt_Rep(BaseModule):
     def __init__(self, in_chans=3, num_classes=1000,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.,
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
-                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None,
+                 LoRA=None, out_indices=[0, 1, 2, 3], sparse=None, optimizer=None,
                  use_checkpoint=False,
                  pretrained=None,
                  init_cfg=None):
@@ -255,7 +255,7 @@ class ConvNeXt_Rep(BaseModule):
 
         if sparse:
             self.pretrained_sparse()
-            self.apply_mssk()
+            self.apply_mssk(optimizer=optimizer)
 
     def pretrained_sparse(self):
         self.masks = {}
@@ -266,11 +266,10 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, weight in self.named_parameters():
             if name in self.masks:
-                self.masks[name] = (weight != 0.0).float().data.cuda()
-                print(type(self.masks[name]))
+                self.masks[name] = (weight != 0.0).float().data.to(weight.device)
 
 
-    def apply_mssk(self):
+    def apply_mssk(self,optimizer):
 
         def synchronism_masks(self):
             for name in self.masks:
@@ -280,10 +279,9 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, tensor in self.named_parameters():
             if name in self.masks:
-                print('apply masks')
-                tensor.data = tensor.data * self.masks[name].to(tensor.device)
-                if 'momentum_buffer' in self.optimizer.state[tensor]:
-                    self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
+                tensor.data = tensor.data * self.masks[name]
+                if 'momentum_buffer' in optimizer.state[tensor]:
+                    optimizer.state[tensor]['momentum_buffer'] = optimizer.state[tensor][
                                                                           'momentum_buffer'] * self.masks[
                                                                           name]
 
