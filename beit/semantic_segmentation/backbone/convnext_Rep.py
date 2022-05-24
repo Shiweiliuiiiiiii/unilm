@@ -266,14 +266,13 @@ class ConvNeXt_Rep(BaseModule):
 
         for name, weight in self.named_parameters():
             if name in self.masks:
-                self.masks[name][:] = (weight != 0.0).float().data.to('cuda')
+                self.masks[name] = (weight != 0.0).float().data.to('cuda')
 
 
     def apply_mssk(self):
 
         def synchronism_masks(self):
-
-            for name in self.masks.keys():
+            for name in self.masks:
                 torch.distributed.broadcast(self.masks[name], src=0, async_op=False)
 
         synchronism_masks(self)
