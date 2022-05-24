@@ -152,6 +152,7 @@ def main():
             PALETTE=datasets[0].PALETTE)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
+
     train_segmentor(
         model,
         datasets,
@@ -161,6 +162,9 @@ def main():
         timestamp=timestamp,
         meta=meta)
 
+    custom_hooks = [
+        dict(type='ApplyMaskHook')
+    ]
 
 if __name__ == '__main__':
     main()
