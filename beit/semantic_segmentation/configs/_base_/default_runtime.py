@@ -5,8 +5,6 @@ log_config = dict(
         dict(type='TextLoggerHook', by_epoch=False),
         # dict(type='TensorboardLoggerHook')
     ])
-# hook to apply mask
-mask_hooks = dict(type='ApplyMaskHook')
 
 # yapf:enable
 dist_params = dict(backend='nccl')
