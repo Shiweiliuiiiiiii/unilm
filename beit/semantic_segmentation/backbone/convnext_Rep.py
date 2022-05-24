@@ -280,7 +280,7 @@ class ConvNeXt_Rep(BaseModule):
         for name, tensor in self.named_parameters():
             if name in self.masks:
                 print('apply masks')
-                tensor.data = tensor.data * self.masks[name]
+                tensor.data = tensor.data * self.masks[name].data.cuda()
                 if 'momentum_buffer' in self.optimizer.state[tensor]:
                     self.optimizer.state[tensor]['momentum_buffer'] = self.optimizer.state[tensor][
                                                                           'momentum_buffer'] * self.masks[
