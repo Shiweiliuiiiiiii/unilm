@@ -204,7 +204,6 @@ class ConvNeXt_Rep(BaseModule):
                  layer_scale_init_value=1e-6, head_init_scale=1., kernel_size=[31, 29, 27, 13, 3], width_factor=1,
                  LoRA=None, out_indices=[0, 1, 2, 3],
                  use_checkpoint=False,
-                 pretrained=None,
                  init_cfg=None):
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
@@ -213,7 +212,6 @@ class ConvNeXt_Rep(BaseModule):
         dims = [int(x * width_factor) for x in dims]
         self.kernel_size = kernel_size
         self.out_indices = out_indices
-        self.pretrained = pretrained
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
             nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
@@ -260,8 +258,11 @@ class ConvNeXt_Rep(BaseModule):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-    def init_weights(self):
+    def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
         """
 
         def _init_weights(m):
@@ -273,11 +274,11 @@ class ConvNeXt_Rep(BaseModule):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
-        if isinstance(self.pretrained, str):
+        if isinstance(pretrained, str):
             self.apply(_init_weights)
             logger = get_root_logger()
-            load_checkpoint(self, self.pretrained, strict=False, logger=logger)
-        elif self.pretrained is None:
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
+        elif pretrained is None:
             self.apply(_init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
