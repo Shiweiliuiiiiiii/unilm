@@ -9,7 +9,7 @@
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
-    pretrained=None,
+    # pretrained=None,
     backbone=dict(
         type='ConvNeXt_Rep',
         in_chans=3,
